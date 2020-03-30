@@ -6,9 +6,8 @@ from config import cfg
 import torch
 
 
-def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=dilation, groups=groups, bias=False, dilation=dilation)
+def conv3x3(in_planes, out_planes, stride=1):
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
 
 
 def conv1x1(in_planes, out_planes, stride=1):
@@ -17,7 +16,7 @@ def conv1x1(in_planes, out_planes, stride=1):
 
 class BasicBlock(nn.Module):
     expansion = 1
-
+    # ResNet18及ResNet34中的block是由 两个3*3的conv组成
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
@@ -47,8 +46,8 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
+    # ResNet50及ResNet101、ResNet152中的block是由 1*1的conv + 3*3的conv + 1*1的conv组成
     expansion = 4
-
     def __init__(self, in_c, out_c, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
         norm_layer = nn.BatchNorm2d
@@ -86,9 +85,11 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-
-    def __init__(self, arch, zero_init_residual=False,):
+    # ResNet中主要靠一个conv一个maxpool+4个Block + average_pool 以及全连接层+softmax组成
+    # 不同层数之间的ResNet主要是中间的4个Block中所包含的block类型以及数量不同,首尾都是一致的
+    def __init__(self, res_name, zero_init_residual=False,):
         super(ResNet, self).__init__()
+        # 不同层数的ResNet中Block里面的block种类以及对应的Block重复次数
         resnets = {
             'resnet18': [BasicBlock, [2, 2, 2, 2]],
             'resnet34': [BasicBlock, [3, 4, 6, 3]],
@@ -96,24 +97,26 @@ class ResNet(nn.Module):
             'resnet101': [Bottleneck, [3, 4, 23, 3]],
             'resnet152': [Bottleneck, [3, 8, 36, 3]],
         }
-        block = resnets[arch][0]
-        layers = resnets[arch][1]
+        # 获取res_name类型下的 block类型和各层重复的次数
+        block = resnets[res_name][0]
+        layers = resnets[res_name][1]
 
-        self.arch = arch
+        self.res_name = res_name
 
-        self.dilation = 1
-        self.base_width = 64
+        # 这个in_c代表的是Block中第一个conv输入的维度,而不是整个ResNet输入的维度
         self.in_c = 64
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
+        # 不管是多少层的ResNet其中每个Block的输入维度都是相同的 并且有规律翻倍 64 128 256 512
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        # extra 额外层,用于在c5基础上输出p6,p7
+
+        # extra 额外层,用于在c5基础上输出p6,p7,这里开始就不属于ResNet了
         self.conv6 = nn.Conv2d(512*block.expansion, 256, kernel_size=3, stride=2, padding=1)
         self.conv7 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1)
 
@@ -131,8 +134,13 @@ class ResNet(nn.Module):
                 elif isinstance(m, BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _make_layer(self, block, out_c, blocks, stride=1):
+    # ResNet中Block的构建
+    def _make_layer(self, block, out_c, num_block, stride=1):
         downsample = None
+        # 这里面其实除了第一个Block的stride为1,其他都为2. or 后面的条件是为了确保Block内开始和结束的通道数不一致的情况下才会触发
+        # 因为不管ResNet多少层,其中的Block的开始和结束通道都为 in_c 和 out_c*expansion 只不过18和34的expansion为1,其他的为4而已
+        # 所以ResNet18、34 第一个Block都是没有downsample的,对于这两个网络来说stride != 1 是完全可以应付的
+        # 而其他的ResNet网络则需要第二个条件判断,因为它们在第一个Block只有维度的变化(*expansion),没有尺寸上的变化
         if stride != 1 or self.in_c != out_c * block.expansion:
             downsample = nn.Sequential(
                 conv1x1(self.in_c, out_c * block.expansion, stride),
@@ -142,7 +150,7 @@ class ResNet(nn.Module):
         layers = []
         layers.append(block(self.in_c, out_c, stride, downsample))
         self.in_c = out_c * block.expansion
-        for _ in range(1, blocks):
+        for _ in range(1, num_block):
             layers.append(block(self.in_c, out_c,))
 
         return nn.Sequential(*layers)
@@ -152,7 +160,6 @@ class ResNet(nn.Module):
         c1 = self.bn1(c1)
         c1 = self.relu(c1)
         c1 = self.maxpool(c1)
-
         c2 = self.layer1(c1)
         c3 = self.layer2(c2)
         c4 = self.layer3(c3)
@@ -171,7 +178,7 @@ class ResNet(nn.Module):
             'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
         }
 
-        url = model_urls[self.arch]
+        url = model_urls[self.res_name]
         weight_name = url.split('/')[-1]
         weight_path = cfg.res50_path
 
@@ -185,9 +192,9 @@ class ResNet(nn.Module):
         print(' --- {} 权重加载成功 --- '.format(weight_name))
 
 
-def build_resnet(arch, pretrained=True):
-    assert arch in ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
-    model = ResNet(arch)
+def build_resnet(res_name, pretrained=True):
+    assert res_name in ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
+    model = ResNet(res_name)
     if pretrained:
         model.load_weights()
     return model
@@ -196,6 +203,8 @@ def build_resnet(arch, pretrained=True):
 if __name__ == '__main__':
     import torch
     net = build_resnet('resnet50',pretrained=False)
+    print(net)
+    exit()
     c3,c4,c5,p6,p7=net(torch.ones((1,3,600,600)))
     print(c3.size())
     print(c4.size())
