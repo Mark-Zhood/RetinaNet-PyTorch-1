@@ -11,11 +11,9 @@ class RetinaNet(nn.Module):
             pred_loc,  torch.Size([B, 67995, 4])            RetinaNe网络预测所有anchor的类别概率
     # 模型流程部分可以参考 https://lilianweng.github.io/lil-log/2018/12/27/object-detection-part-4.html 其中的RetinaNet部分
     """
-    def __init__(self):
+    def __init__(self, res_name):
         super(RetinaNet,self).__init__()
-        self.resnet = 'resnet50'
-        self.num_classes = 19
-        self.num_anchors = 9
+        self.res_name = res_name
         expansion_list={
             'resnet18': 1,
             'resnet34': 1,
@@ -23,11 +21,11 @@ class RetinaNet(nn.Module):
             'resnet101': 4,
             'resnet152': 4,
         }
-        assert self.resnet in expansion_list
+        assert self.res_name in expansion_list
         # 初始化Resnet、FPN以、定位与分类卷积层
-        self.backbone = build_resnet(self.resnet, pretrained=True)
-        expansion = expansion_list[self.resnet]
-        self.fpn = FPN(channels_of_fetures=[128*expansion, 256*expansion, 512*expansion])
+        self.backbone = build_resnet(self.res_name, pretrained=True)
+        expansion = expansion_list[self.res_name]
+        self.fpn = FPN(channels_of_fetures=[512*expansion, 256*expansion, 128*expansion])
         self.predictor = predictor()
 
     def forward(self, x):

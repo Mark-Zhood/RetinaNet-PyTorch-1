@@ -16,8 +16,9 @@ def conv1x1(in_planes, out_planes, stride=1):
 
 class BasicBlock(nn.Module):
     expansion = 1
-    # ResNet18及ResNet34中的block是由 两个3*3的conv组成
+
     def __init__(self, inplanes, planes, stride=1, downsample=None):
+        # ResNet18及ResNet34中的Block是由 两个3*3的conv组成
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -46,9 +47,10 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    # ResNet50及ResNet101、ResNet152中的block是由 1*1的conv + 3*3的conv + 1*1的conv组成
     expansion = 4
+
     def __init__(self, in_c, out_c, stride=1, downsample=None):
+        # ResNet50及ResNet101、ResNet152中的block是由 1*1的conv + 3*3的conv + 1*1的conv组成
         super(Bottleneck, self).__init__()
         norm_layer = nn.BatchNorm2d
         self.conv1 = conv1x1(in_c, out_c)
@@ -103,7 +105,7 @@ class ResNet(nn.Module):
 
         self.res_name = res_name
 
-        # 这个in_c代表的是Block中第一个conv输入的维度,而不是整个ResNet输入的维度
+        # 这个in_c代表的是每个Block中第一个conv的输入维度
         self.in_c = 64
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
@@ -140,7 +142,7 @@ class ResNet(nn.Module):
         # 这里面其实除了第一个Block的stride为1,其他都为2. or 后面的条件是为了确保Block内开始和结束的通道数不一致的情况下才会触发
         # 因为不管ResNet多少层,其中的Block的开始和结束通道都为 in_c 和 out_c*expansion 只不过18和34的expansion为1,其他的为4而已
         # 所以ResNet18、34 第一个Block都是没有downsample的,对于这两个网络来说stride != 1 是完全可以应付的
-        # 而其他的ResNet网络则需要第二个条件判断,因为它们在第一个Block只有维度的变化(*expansion),没有尺寸上的变化
+        # 而其他的ResNet网络则需要第二个条件判断,因为它们在第一个Block有维度的变化(*4)
         if stride != 1 or self.in_c != out_c * block.expansion:
             downsample = nn.Sequential(
                 conv1x1(self.in_c, out_c * block.expansion, stride),
@@ -149,6 +151,7 @@ class ResNet(nn.Module):
 
         layers = []
         layers.append(block(self.in_c, out_c, stride, downsample))
+        # 将每个Block的末尾conv输出通道数传给下一个Block的起始conv的输入维度
         self.in_c = out_c * block.expansion
         for _ in range(1, num_block):
             layers.append(block(self.in_c, out_c,))
@@ -180,7 +183,7 @@ class ResNet(nn.Module):
 
         url = model_urls[self.res_name]
         weight_name = url.split('/')[-1]
-        weight_path = cfg.res50_path
+        weight_path = cfg.resnet_path
 
         if not os.path.exists(weight_path):
 
@@ -193,7 +196,6 @@ class ResNet(nn.Module):
 
 
 def build_resnet(res_name, pretrained=True):
-    assert res_name in ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
     model = ResNet(res_name)
     if pretrained:
         model.load_weights()

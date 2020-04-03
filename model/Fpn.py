@@ -13,9 +13,9 @@ class FPN(nn.Module):
         self.channels_of_fetures = channels_of_fetures
         # 以下三个卷积只是起到降维的作用
         # lateral_conv1 -> 2048,256   lateral_conv2 -> 1024,256   lateral_conv3  -> 512,256
-        self.lateral_conv1 = nn.Conv2d(channels_of_fetures[2], channel_out, kernel_size=1, stride=1, padding=0)
+        self.lateral_conv1 = nn.Conv2d(channels_of_fetures[0], channel_out, kernel_size=1, stride=1, padding=0)
         self.lateral_conv2 = nn.Conv2d(channels_of_fetures[1], channel_out, kernel_size=1, stride=1, padding=0)
-        self.lateral_conv3 = nn.Conv2d(channels_of_fetures[0], channel_out, kernel_size=1, stride=1, padding=0)
+        self.lateral_conv3 = nn.Conv2d(channels_of_fetures[2], channel_out, kernel_size=1, stride=1, padding=0)
 
         self.top_down_conv1 = nn.Conv2d(channel_out, channel_out, kernel_size=3, stride=1, padding=1)
         self.top_down_conv2 = nn.Conv2d(channel_out, channel_out, kernel_size=3, stride=1, padding=1)
