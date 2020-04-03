@@ -15,7 +15,7 @@ test_dataset = ListDataset(cfg.val_dir, is_train=False)
 
 if __name__ == '__main__':
     data_loader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)
-    model = RetinaNet().cuda()
+    model = RetinaNet(cfg.res_name).cuda()
     if cfg.use_adam:
         optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     else:

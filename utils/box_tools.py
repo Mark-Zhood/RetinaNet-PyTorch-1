@@ -50,9 +50,9 @@ def box2loc(anchor_targets, anchors_xywh):
 def assign_anchors(target_boxes, target_labels, anchors_xyxy):
     """
     该方法的意义在于把所有的anchor都赋予相对应的拟合target_box与label(1正样本,0负样本,-1忽略)
-    target_boxes:       [target_nums,4]         真实框
-    target_labels:      [target_nums]           真实标签
-    anchors_xyxy:       [anchor_nums,4]         预测坐标
+    target_boxes:       [target_nums,4]         真实框的坐标
+    target_labels:      [target_nums]           真实框标签
+    anchors_xyxy:       [anchor_nums,4]         基础anchors的坐标
     anchor_targets:     [anchor_nums,4]         基础anchors要拟合的target_boxes
     anchor_labels:     [anchor_nums]            基础anchors要拟合的target_labels
     """
@@ -75,7 +75,7 @@ def assign_anchors(target_boxes, target_labels, anchors_xyxy):
     anchor_labels = target_labels[anchor_argmaxious]
     # IOU值小于iou_threshold的被视为背景(和target有最大IOU的anchor除外)
     anchor_labels[anchor_maxious < 0.4] = 0
-    # 原始论文中 如果anchor与target的IOU大于0.4小于0.5会被忽略,及最终不参与分类的loss计算.但是个人觉得这样会增加一些 hard examples
+    # 原始论文中 如果anchor与target的IOU大于0.4小于0.5会被忽略,即最终不参与分类的loss计算.但是个人觉得这样会增加一些 hard examples
     anchor_labels[(anchor_maxious > 0.4) & (0.5 > anchor_maxious)] = -1
     anchor_targets = target_boxes[anchor_argmaxious]
     return anchor_targets, anchor_labels
@@ -94,6 +94,7 @@ def xy2wh(boxes):
 def create_anchors():
     # fpn输出的特征图大小(这里的值时匹配600*600的),注意如果网络输入不等于600*600,则features_maps也要相应修改
     # features_maps = [(75, 75), (38, 38), (19, 19), (10, 10), (5, 5)]
+    # 至于为什么是从75*75的特征图开始计算,是因为一般小物体的长宽基本都在10px以上 75*75个特征点,每个特征点代表了8*8的像素区域
     # 这里写了一个根据网络输入尺寸而适应的features_maps
     features_width = cfg.height
     features_maps = []
@@ -102,6 +103,7 @@ def create_anchors():
         if i < 2:
             continue
         features_maps.append((features_width, features_width))
+    # 这里是每个特征图对应的基础anchor长度
     anchor_sizes = [32, 64, 128, 256, 512]
     # ratios = np.array([0.5, 1, 2])  # 每个特征点上的三种长宽比 虽然没有使用上这个变量 但是最里面的两个for循环中有体现到
     scales = np.array([2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])  # 每个特征点上的三种面积尺寸 约等于~ 1 1.25 1.6
@@ -113,16 +115,16 @@ def create_anchors():
                 cx = (j + 0.5) / feature_map_w
                 cy = (i + 0.5) / feature_map_h
 
-                size = anchor_sizes[k] / cfg.height  # 将框体长宽转为 比例形式
+                size = anchor_sizes[k] / cfg.height  # 将框体长宽转为 相对形式
 
                 sides_square = scales * size  # 计算正方形检测框边长
                 for side_square in sides_square:
                     anchors.append([cx, cy, side_square, side_square])  # 添加正方形检测框
 
-                sides_long = sides_square * 2 ** (1 / 2)  # 计算长形检测框长边
+                sides_long = sides_square * 2 ** (1 / 2)  # 计算长方形检测框长边
                 for side_long in sides_long:
-                    anchors.append([cx, cy, side_long, side_long / 2])  # 添加长形检测框,短边为长边的一半
-                    anchors.append([cx, cy, side_long / 2, side_long])
+                    anchors.append([cx, cy, side_long, side_long / 2])  # 添加长方形检测框,宽为高两倍
+                    anchors.append([cx, cy, side_long / 2, side_long])  # 添加长方形检测框,高为宽两倍
 
     anchors = torch.tensor(anchors)
     # 对超出图像范围的anchor进行截断,截断时先转为 [x_min, y_min, x_min, x_max]形式.然后再转回 [x, y, w, h]形式返回

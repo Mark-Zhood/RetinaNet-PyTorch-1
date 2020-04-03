@@ -1,16 +1,16 @@
 class Config:
     env = 'RetinaNet'                                   # Visdom 可视化环境名称
-    train_dir = r'D:\py_pro\YOLOv3-PyTorch\data\wenyi\train.txt'  # 训练集
-    val_dir = r'D:\py_pro\YOLOv3-PyTorch\data\wenyi\val.txt'      # 验证集
-    test_dir = r'D:\data\RetinaNet\test'                       # 测试图片文件夹
-    res50_path = r'D:\data\RetinaNet\pretrained\resnet50-19c8e357.pth'   # resnet50的预训练权重
-    load_path = r'D:\data\RetinaNet\map_0.9652.pt'  # 基于此模型权重训练
-    video_path = r'D:\data\RetinaNet\zzz.avi'
+    train_dir = r'data\wenyi\train.txt'  # 训练集  以下文件路径均为相对路径
+    val_dir = r'data\wenyi\val.txt'      # 验证集
+    test_dir = r'test'                       # 测试图片文件夹
+    resnet_path = r'pretrained\resnet50-19c8e357.pth'   # resnet的预训练权重,默认resnet50
+    load_path = r'map_0.9652.pt'  # 基于此模型权重训练
+    video_path = r'zzz.avi'
     pretrain = False         # 是否基于已有的权重基础上继续训练
     height = 600            # 网络输入尺寸
     num_workers = 2         # 取决于你的cpu核数,比如9400F是六核的,建议2~4之间会比较好
     test_num_workers = 2    # 同上
-
+    res_name = 'resnet50'   # 选用哪种ResNet
     use_adam = True         # 是否使用Adam优化方式,如果使用Adam的话需要一个相对于SGD更小的学习率比如 1e-4
     weight_decay = 0.0005   # 权重衰减系数
     lr_decay = 0.1          # 每隔指定epoch学习率下降的倍数

@@ -54,7 +54,7 @@ def calc_pr(pred_boxes, pred_labels, pred_scores, gt_boxes, gt_labels):
     for pred_box, pred_label, pred_score, gt_box, gt_label in zip(pred_boxes, pred_labels, pred_scores, gt_boxes,gt_labels):
         # 每张测试图片中预测的情况,这里只针对测试集中出现的label进行计算mAP
         for l in np.unique(gt_label):
-            if l ==0:
+            if l ==0:   # 跳过背景的ap计算
                 continue
             # 每张测试图片中l类上的预测数据
             pred_mask_l = pred_label == l
