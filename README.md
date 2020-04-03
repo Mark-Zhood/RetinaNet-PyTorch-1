@@ -10,4 +10,4 @@
 
 测试:运行dection_image.py或者dection_video.py文件即可
 
-###### NMS阶段会耗费大量的时间,导致此版本代码的FPS约为10.原始论文中FPS为14.
+###### CPU:8400 GPU:1660 RetinaNet-50-500 FPS约为20左右.原始论文中FPS为14.

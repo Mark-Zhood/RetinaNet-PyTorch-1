@@ -1,13 +1,13 @@
 class Config:
     env = 'RetinaNet'                                   # Visdom 可视化环境名称
-    train_dir = r'data\wenyi\train.txt'  # 训练集  以下文件路径均为相对路径
-    val_dir = r'data\wenyi\val.txt'      # 验证集
+    train_dir = r'data\train.txt'  # 训练集  以下文件路径均为相对路径
+    val_dir = r'data\val.txt'      # 验证集
     test_dir = r'test'                       # 测试图片文件夹
-    resnet_path = r'pretrained\resnet50-19c8e357.pth'   # resnet的预训练权重,默认resnet50
+    resnet_path = r'D:\py_pro\RetinaNet-PyTorch\resnet50-19c8e357.pth'   # resnet的预训练权重,默认resnet50
     load_path = r'map_0.9652.pt'  # 基于此模型权重训练
     video_path = r'zzz.avi'
     pretrain = False         # 是否基于已有的权重基础上继续训练
-    height = 600            # 网络输入尺寸
+    height = 500            # 网络输入尺寸
     num_workers = 2         # 取决于你的cpu核数,比如9400F是六核的,建议2~4之间会比较好
     test_num_workers = 2    # 同上
     res_name = 'resnet50'   # 选用哪种ResNet
