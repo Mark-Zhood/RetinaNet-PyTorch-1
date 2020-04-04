@@ -79,7 +79,7 @@ class focal_loss(nn.Module):
 def hard_negative_mining(loss, labels, neg_pos_ratio=3):
     """
     loss其实是为所有batch_size中所有anchors的背景类损失
-    先计算出所有正样本所在位置及其数量,并将正样本所在位置的背景损失设为无穷小值,以及计算出负样本数量
+    先计算出所有正样本所在位置及其数量,并将正样本所在位置的背景损失设为负值,以及计算出负样本数量
     然后获取所有anchor的前num_neg个最大背景loss所在的anchor位置并与正样本所在anchor位置合并起来返回
     Args:
         loss (batch_size, num_anchors):   一个batch中所有anchor的背景类损失
