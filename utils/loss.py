@@ -32,7 +32,7 @@ class multiboxloss(nn.Module):
         # loc损失
         loc_loss = F.smooth_l1_loss(pred_locs, target_locs, reduction='sum')
         num_pos = target_locs.size(0)
-        return loc_loss / num_pos, cls_loss / num_pos
+        return loc_loss / num_pos, cls_loss / (num_pos*4)
 
 
 class focal_loss(nn.Module):
